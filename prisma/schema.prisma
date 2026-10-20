@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Agent {
+  id        String   @id
+  name      String
+  role      String   @default("Developer")
+  status    String   @default("IDLE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  telemetries AgentTelemetry[]
+  summary     AgentMandaysSummary?
+
+  @@map("agents")
+}
+
+model AgentTelemetry {
+  id          Int      @id @default(autoincrement())
+  agentId     String
+  projectName String
+  eventType   String   @default("PROMPT_EXECUTION")
+  promptCount Int      @default(1)
+  durationMs  BigInt   @default(0)
+  createdAt   DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@map("agent_telemetries")
+}
+
+model AgentMandaysSummary {
+  agentId           String @id
+  totalPrompts      Int    @default(0)
+  totalDurationMs   BigInt @default(0)
+  calculatedMandays Float  @default(0)
+
+  agent Agent @relation(fields: [agentId], references: [id])
+
+  @@map("agent_mandays_summary")
+}

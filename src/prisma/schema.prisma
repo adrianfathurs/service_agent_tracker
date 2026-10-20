@@ -1,0 +1,50 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Agent {
+  id             String               @id @map("id") // Email / Developer Username
+  name           String
+  role           String               @default("Developer")
+  currentTask    String?              @map("current_task")
+  status         String               @default("IDLE")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  
+  telemetries    AgentTelemetry[]
+  mandaysSummary AgentMandaysSummary?
+
+  @@map("agents")
+}
+
+model AgentTelemetry {
+  id             Int      @id @default(autoincrement())
+  agentId        String   @map("agent_id")
+  projectName    String   @map("project_name")
+  eventType      String   @map("event_type") // e.g., 'PROMPT_EXECUTION', 'CLI_SESSION'
+  promptCount    Int      @default(1) @map("prompt_count")
+  durationMs     BigInt   @default(0) @map("duration_ms")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  agent          Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_telemetries")
+}
+
+model AgentMandaysSummary {
+  id                Int      @id @default(autoincrement())
+  agentId           String   @unique @map("agent_id")
+  totalPrompts      Int      @default(0) @map("total_prompts")
+  totalDurationMs   BigInt   @default(0) @map("total_duration_ms")
+  calculatedMandays Float    @default(0.0) @map("calculated_mandays")
+  lastUpdated       DateTime @updatedAt @map("last_updated")
+
+  agent             Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("agent_mandays_summary")
+}
